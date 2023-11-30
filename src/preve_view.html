@@ -1,0 +1,216 @@
+<template>
+    <header id="header" role="banner">
+        <nav>
+            <div class="logo">
+                <a href="/">무비세상</a>
+            </div>
+            <ul>
+                <li><a href="/">인기영화 TOP10</a></li>
+                <li><a href="/">떠오르는 영화 TOP10</a></li>
+            </ul>
+        </nav>
+        <div class="slide_area">
+            <div class="slide_item container">
+                <div class="slide_poster">
+                    <img :src="getImageUrl(movieInfo.poster_path)" :alt="movieInfo.title">
+                </div>
+                <div class="slide_info">
+                    <h2 class="title">{{ movieInfo.title }}</h2>
+                    <p class="desc">{{ movieInfo.overview }}</p>
+                    <div class="date">
+                        <h4>개봉일</h4>
+                        🚀 {{ movieInfo.release_date }}
+                    </div>
+                    <div class="vote_average">
+                        <h4>평점</h4>
+                        ⭐ {{ movieInfo.vote_average }}
+                    </div>
+                    <ul class="credit">
+                        <h4>출연진</h4>
+                        <li v-for="actor in movieInfo.cast" :key="actor.id"
+                            :style="{ backgroundImage: `url(${getImageUrl(actor.profile_path)})` }"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="slide_bg">
+                <img :src="getImageUrl(movieInfo.backdrop_path)" :alt="movieInfo.title">
+            </div>
+        </div>
+    </header>
+</template>
+
+<script>
+    import { onMounted, ref } from "vue";
+    import { useRoute } from "vue-router";
+
+    export default {
+        setup() {
+            const movieInfo = ref({}); // 데이터를 담을 ref 선언
+            const route = useRoute();
+
+            const getImageUrl = (path) => {
+                return path ? `https://image.tmdb.org/t/p/w500/${path}` : '';
+            };
+
+            const movieInfoFetch = () => {
+                const movieId = route.params.movieId;
+                const language = 'ko-KR';
+                const apiKey = import.meta.env.VITE_API_KEY;
+                const movieUrl = `https://api.themoviedb.org/3/movie/${movieId}?language=${language}&api_key=${apiKey}`;
+                const creditsUrl = `https://api.themoviedb.org/3/movie/${movieId}/credits?language=${language}&api_key=${apiKey}`;
+
+                // 첫 번째 fetch: 영화 정보 가져오기
+                fetch(movieUrl)
+                    .then((response) => response.json())
+                    .then((res) => {
+                        console.log(res); // 불러온 영화 정보 콘솔 출력
+                        movieInfo.value = res; // movieInfo에 영화 정보 저장
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+
+                // 두 번째 fetch: 출연진 정보 가져오기
+                fetch(creditsUrl)
+                    .then((response) => response.json())
+                    .then((res) => {
+                        console.log(res); // 불러온 크레딧 정보 콘솔 출력
+                        if (res.cast) {
+                            movieInfo.value.cast = res.cast; // movieInfo에 출연진 정보 저장
+                        }
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+            };
+
+            onMounted(() => {
+                movieInfoFetch();
+            });
+
+            return {
+                movieInfo,
+                getImageUrl
+            };
+        }
+    };
+</script>
+
+<style lang="scss">
+    nav {
+        position: absolute;
+        z-index: 50;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+
+        .logo {
+            padding: 0 20px;
+            font-size: 1.5rem;
+            font-family: 'HakgyoansimMalgeunnalB';
+        }
+
+        ul {
+            display: flex;
+            justify-content: space-between;
+
+            li {
+                font-size: .95rem;
+                padding: 0px 20px;
+            }
+        }
+    }
+
+    .slide_area {
+        width: 100%;
+        height: 75vh;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        h4 {
+            width: 100%;
+            margin: 5px 0;
+            font-size: 0.8;
+            color: var(--white300);
+        }
+
+        .slide_item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 100;
+
+            .slide_poster {
+                img {
+                    height: 500px;
+                }
+            }
+
+            .slide_info {
+                width: 60%;
+
+                .title {
+                    font-size: 2vw;
+                }
+
+                .desc {
+                    font-size: 0.85rem;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    margin-bottom: 20px;
+                }
+
+                .credit {
+                    margin: 20px 0;
+                    display: flex;
+                    justify-content: left;
+                    flex-wrap: wrap;
+
+                    li {
+                        width: 70px;
+                        height: 90px;
+                        margin-right: 20px;
+                        background-position: center center;
+                        background-image: url("https://www.themoviedb.org/t/p/w500/mLKvNuCJSgyK0WdLd4ogO81sOO1.jpg");
+                        background-size: cover;
+                    }
+
+                    li:nth-child(n+8) {
+                        display: none;
+                    }
+                }
+            }
+        }
+
+        .slide_bg img {
+            display: block;
+            width: 100%;
+            height: auto;
+            filter: blur(3px);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        &::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            opacity: 0.5;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    }
+</style>
